@@ -26,5 +26,6 @@
 #include "ofxCv/Flow.h" // optical flow, from james george
 #include "ofxCv/ObjectFinder.h" // object finding (e.g., face detection)
 #include "ofxCv/Kalman.h" // Kalman filter for smoothing
+#include "ofxCv/Stereo.h" // Stereo matching (StereoBG)
 
 // <3 kyle
