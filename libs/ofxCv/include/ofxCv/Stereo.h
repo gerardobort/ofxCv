@@ -35,6 +35,7 @@ namespace ofxCv {
         }
 	    vector<cv::Point2f> calibrate(cv::Mat image, bool& success);
         vector<cv::Point3f> Create3DChessboardCorners(cv::Size boardSize, float squareSize);
+
         cv::Mat dst;
         void getDst(ofImage& img) {
             return toOf(dst, img);
@@ -51,6 +52,34 @@ namespace ofxCv {
         cv::Ptr<cv::StereoBM> sbm;
         //cv::Ptr<cv::StereoSGBM> sbm;
         
+    protected:
+	};
+
+
+	class Camera {
+	public:
+		Camera();
+		virtual ~Camera();
+
+        // chessboard calibration
+        template <class T>
+		ofPolyline calibrate(T& image, bool& success) {
+            return toOf(calibrate(toCv(image), success));
+        }
+	    vector<cv::Point2f> calibrate(cv::Mat image, bool& success);
+        vector<cv::Point3f> Create3DChessboardCorners(cv::Size boardSize, float squareSize);
+
+        void rectify(ofImage srcImage, ofImage& dstImage);
+            
+        std::vector<cv::Mat> rotationVectors;
+        std::vector<cv::Mat> translationVectors;
+        cv::Mat distortionCoefficients;
+        cv::Mat cameraMatrix;
+        cv::Mat cameraMatrixRefined;
+
+        bool isReady;
+        
+    private:
     protected:
 	};
 	
