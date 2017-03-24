@@ -63,10 +63,11 @@ namespace ofxCv {
 
         // chessboard calibration
         template <class T>
-		ofPolyline calibrate(T& image, bool& success) {
-            return toOf(calibrate(toCv(image), success));
+		ofPolyline calibrate(T& image) {
+            image.setImageType(OF_IMAGE_GRAYSCALE);
+            return toOf(calibrate(toCv(image)));
         }
-	    vector<cv::Point2f> calibrate(cv::Mat image, bool& success);
+	    vector<cv::Point2f> calibrate(cv::Mat image);
         vector<cv::Point3f> Create3DChessboardCorners(cv::Size boardSize, float squareSize);
 
         void rectify(ofImage srcImage, ofImage& dstImage);

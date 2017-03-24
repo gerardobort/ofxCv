@@ -71,39 +71,36 @@ namespace ofxCv {
 	Camera::~Camera(){
 	}
 
-	vector<Point2f> Camera::calibrate(Mat image, bool& success){
+	vector<Point2f> Camera::calibrate(Mat image){
         cv::Size boardSize(9,7);
+        cv::Size imageSize = image.size();
         std::vector<std::vector<cv::Point2f> > imagePoints(1);
 
         // CALIB_CB_FAST_CHECK saves a lot of time on images
         // that do not contain any chessboard corners
-        success = findChessboardCorners(image, boardSize, imagePoints[0], CALIB_CB_ADAPTIVE_THRESH + CALIB_CB_NORMALIZE_IMAGE + CALIB_CB_FAST_CHECK);
+        bool success = findChessboardCorners(image, boardSize, imagePoints[0], CALIB_CB_ADAPTIVE_THRESH + CALIB_CB_NORMALIZE_IMAGE + CALIB_CB_FAST_CHECK);
 
         if (success) {
             isReady = true;
-            cornerSubPix(image, imagePoints[0], cv::Size(11, 11), cv::Size(-1, -1),
-                TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
+            cornerSubPix(image, imagePoints[0], cv::Size(11, 11), cv::Size(-1, -1), TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
 
             // drawChessboardCorners(image, boardSize, Mat(imagePoints[0]), success);
-
             // http://programmingexamples.net/wiki/OpenCV/CheckerboardCalibration
 
             float squareSize = 1.f; // This is "1 arbitrary unit"
-            cv::Size imageSize = image.size();
 
             // Find the chessboard corners
             std::vector<std::vector<cv::Point3f> > objectPoints(1);
             objectPoints[0] = Create3DChessboardCorners(boardSize, squareSize);
             
-            int flags = 0;
-            double rms = calibrateCamera(objectPoints, imagePoints, imageSize, cameraMatrix, distortionCoefficients, rotationVectors, translationVectors, flags|CV_CALIB_FIX_K4|CV_CALIB_FIX_K5);
+            int flags = 0|CV_CALIB_FIX_K4|CV_CALIB_FIX_K5;
+            double rms = calibrateCamera(objectPoints, imagePoints, imageSize, cameraMatrix, distortionCoefficients, rotationVectors, translationVectors, flags);
+            cameraMatrixRefined = getOptimalNewCameraMatrix(cameraMatrix, distortionCoefficients, imageSize, 0.2);
 
             std::cout << "RMS: " << rms << std::endl;
             std::cout << "Distortion coefficients: " << distortionCoefficients << std::endl;
             std::cout << "Camera matrix: " << cameraMatrix << std::endl;
             std::cout << "Camera matrix refined: " << cameraMatrixRefined << std::endl;
-
-            cameraMatrixRefined = getOptimalNewCameraMatrix(cameraMatrix, distortionCoefficients, imageSize, 0.99);
         }
 
         return imagePoints[0];
@@ -111,9 +108,13 @@ namespace ofxCv {
 
     void Camera::rectify(ofImage srcImage, ofImage& dstImage) {
         // method 1
+        cv::Mat srcMat = toCv(srcImage);
         cv::Mat dstMat;
-        cv::undistort(toCv(srcImage), dstMat, cameraMatrixRefined, distortionCoefficients);
+        cv::undistort(srcMat, dstMat, cameraMatrixRefined, distortionCoefficients);
+
+        // copy resultant matrix into dstImage
         toOf(dstMat, dstImage);
+        dstImage.setImageType(OF_IMAGE_GRAYSCALE);
     }
 
     std::vector<cv::Point3f> Camera::Create3DChessboardCorners(cv::Size boardSize, float squareSize) {
