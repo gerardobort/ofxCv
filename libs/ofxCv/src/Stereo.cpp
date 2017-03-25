@@ -52,7 +52,7 @@ namespace ofxCv {
                 int  speckleRange = 0,
                 bool fullDP = false 
         */
-        sbm = new StereoSGBM(15, ndisparities, SADWindowSize);
+        sbm = new StereoSGBM(0, ndisparities, SADWindowSize);
     }
 	
 	//call with two images
