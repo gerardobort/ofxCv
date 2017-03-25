@@ -31,25 +31,47 @@ namespace ofxCv {
     }
 
     void Stereo::reload() {
-        //-- 2. Call the constructor for StereoBM
-        sbm = new StereoBM(StereoBM::BASIC_PRESET, ndisparities, SADWindowSize);
-        //sbm = new StereoSGBM(0, ndisparities, SADWindowSize);
+        /*
+            StereoSGBM
+                int  minDisparity,
+                int  numDisparities,
+                int  SADWindowSize
+        */
+        // sbm = new StereoBM(StereoBM::PREFILTER_XSOBEL, ndisparities, SADWindowSize);
+        /*
+            StereoSGBM
+                int  minDisparity,
+                int  numDisparities,
+                int  SADWindowSize,
+                int  P1 = 0,
+                int  P2 = 0,
+                int  disp12MaxDiff = 0,
+                int  preFilterCap = 0,
+                int  uniquenessRatio = 0,
+                int  speckleWindowSize = 0,
+                int  speckleRange = 0,
+                bool fullDP = false 
+        */
+        sbm = new StereoSGBM(15, ndisparities, SADWindowSize);
     }
 	
 	//call with two images
 	void Stereo::compute(Mat leftImage, Mat rightImage){
         imgDisparity16S = Mat(leftImage.rows, leftImage.cols, CV_16S);
-        imgDisparity8U = Mat(leftImage.rows, leftImage.cols, CV_8UC1);
+        imgDisparity8U = Mat(leftImage.rows, leftImage.cols, CV_8UC3);
+
         //-- 3. Calculate the disparity image
         sbm->operator()(leftImage, rightImage, imgDisparity16S);
-
-        //-- Check its extreme values
-        minMaxLoc(imgDisparity16S, &minVal, &maxVal);
 	}
 	
 	void Stereo::draw(){
+        double minVal, maxVal;
+
+        //-- Check its extreme values
+        minMaxLoc(imgDisparity16S, &minVal, &maxVal);
+
         //-- 4. Display it as a CV_8UC1 image
-        imgDisparity16S.convertTo(imgDisparity8U, CV_8UC1, 255/(maxVal - minVal));
+        imgDisparity16S.convertTo(imgDisparity8U, CV_8UC3, (255)/(maxVal - minVal));
 
         ofPixels pix8u;
         toOf(imgDisparity8U, pix8u);
@@ -82,20 +104,21 @@ namespace ofxCv {
 
         if (success) {
             isReady = true;
+            // call-again for better corner detection
             cornerSubPix(image, imagePoints[0], cv::Size(11, 11), cv::Size(-1, -1), TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
 
             // drawChessboardCorners(image, boardSize, Mat(imagePoints[0]), success);
             // http://programmingexamples.net/wiki/OpenCV/CheckerboardCalibration
 
-            float squareSize = 1.f; // This is "1 arbitrary unit"
+            float squareSize = 10.f; // This is "1 arbitrary unit"
 
             // Find the chessboard corners
             std::vector<std::vector<cv::Point3f> > objectPoints(1);
             objectPoints[0] = Create3DChessboardCorners(boardSize, squareSize);
             
-            int flags = 0|CV_CALIB_FIX_K4|CV_CALIB_FIX_K5;
+            int flags = CV_CALIB_FIX_K4|CV_CALIB_FIX_K5;
             double rms = calibrateCamera(objectPoints, imagePoints, imageSize, cameraMatrix, distortionCoefficients, rotationVectors, translationVectors, flags);
-            cameraMatrixRefined = getOptimalNewCameraMatrix(cameraMatrix, distortionCoefficients, imageSize, 0.2);
+            cameraMatrixRefined = getOptimalNewCameraMatrix(cameraMatrix, distortionCoefficients, imageSize, 0, imageSize, 0, true);
 
             std::cout << "RMS: " << rms << std::endl;
             std::cout << "Distortion coefficients: " << distortionCoefficients << std::endl;
@@ -112,9 +135,17 @@ namespace ofxCv {
         cv::Mat dstMat;
         cv::undistort(srcMat, dstMat, cameraMatrixRefined, distortionCoefficients);
 
+        // this conversion method doesn't work very well when applying later StereoSGBM
+        //ofPixels pixels;
+        //toOf(dstMat, pixels);
+        //dstImage.setFromPixels(pixels);
+
         // copy resultant matrix into dstImage
         toOf(dstMat, dstImage);
-        dstImage.setImageType(OF_IMAGE_GRAYSCALE);
+
+        // for some reason this seems to be necessary, need to research if there's performance to improve here, apparently yes.
+        // setting CV_*** Mat types, or pre-allocating the dstImage is not enough.
+        dstImage.setImageType(OF_IMAGE_COLOR);
     }
 
     std::vector<cv::Point3f> Camera::Create3DChessboardCorners(cv::Size boardSize, float squareSize) {

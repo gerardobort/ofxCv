@@ -18,6 +18,10 @@ namespace ofxCv {
 		
         template <class T>
 		void compute(T& leftImage, T& rightImage) {
+            // StereoBM requires CV_8UC1 for both input images, StereoSGBM accepts color inputs
+            // leftImage.setImageType(OF_IMAGE_GRAYSCALE);
+            // rightImage.setImageType(OF_IMAGE_GRAYSCALE);
+
             compute(toCv(leftImage), toCv(rightImage));
         }
 		void compute(cv::Mat leftImage, cv::Mat rightImage);
@@ -46,11 +50,8 @@ namespace ofxCv {
         int SADWindowSize = 21; /**< Size of the block window. Must be odd */
         cv::Mat imgDisparity16S;
         cv::Mat imgDisparity8U;
-        double minVal;
-        double maxVal;
-		cv::Mat left, right;
-        cv::Ptr<cv::StereoBM> sbm;
-        //cv::Ptr<cv::StereoSGBM> sbm;
+        //cv::Ptr<cv::StereoBM> sbm;
+        cv::Ptr<cv::StereoSGBM> sbm;
         
     protected:
 	};
