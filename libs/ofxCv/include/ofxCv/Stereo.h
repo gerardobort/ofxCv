@@ -10,7 +10,50 @@ namespace ofxCv {
      *  @see http://docs.opencv.org/2.4.1/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html
      *  @author Gerardo Bort <gerardobort@gmail.com>
      */
+
+
+
+    // --------------
+	class Camera {
+	public:
+		Camera();
+		virtual ~Camera();
+
+        // chessboard calibration
+        template <class T>
+		ofPolyline calibrate(T& image) {
+            image.setImageType(OF_IMAGE_GRAYSCALE);
+            return toOf(calibrate(toCv(image)));
+        }
+	    vector<cv::Point2f> calibrate(cv::Mat image);
+        vector<cv::Point3f> Create3DChessboardCorners(cv::Size boardSize, float squareSize);
+
+        void rectify(ofImage srcImage, ofImage& dstImage);
+        
+        // after successful camera calibration the following properties should be all set
+        cv::Size imageSize;
+        cv::Size boardSize;
+        std::vector<std::vector<cv::Point3f> > objectPoints;
+        std::vector<std::vector<cv::Point2f> > imagePoints;
+        std::vector<cv::Mat> rotationVectors;
+        std::vector<cv::Mat> translationVectors;
+        cv::Mat distortionCoefficients;
+        cv::Mat cameraMatrix;
+        cv::Mat cameraMatrixRefined;
+
+        bool isReady;
+        
+    private:
+    protected:
+	};
+
+
+
+
+
+
 	
+    // --------------
 	class Stereo {
 	public:
 		Stereo(int ndisparities, int SADWindowSize);
@@ -40,10 +83,23 @@ namespace ofxCv {
 	    vector<cv::Point2f> calibrate(cv::Mat image, bool& success);
         vector<cv::Point3f> Create3DChessboardCorners(cv::Size boardSize, float squareSize);
 
-        cv::Mat dst;
-        void getDst(ofImage& img) {
-            return toOf(dst, img);
-        }
+        /*
+        R – Output rotation matrix between the 1st and the 2nd camera coordinate systems.
+        T – Output translation vector between the coordinate systems of the cameras.
+        E – Output essential matrix.
+        F – Output fundamental matrix.
+        */
+        //cv::Mat_<double> cameraMatrix1(3,3); // 3x3 matrix
+        //cv::Mat_<double> distCoeffs1(5,1);   // 5x1 matrix for five distortion coefficients
+        //cv::Mat_<double> cameraMatrix2(3,3); // 3x3 matrix
+        //cv::Mat_<double> distCoeffs2(5,1);   // 5x1 matrix
+        //cv::Mat_<double> R(3,3);             // 3x3 matrix, rotation left to right camera
+        //cv::Mat_<double> T(3,1);             // * 3 * x1 matrix, translation left to right proj. center
+        cv::Mat R, T, E, F;
+        void calibrate(Camera& leftCamera, Camera& rightCamera);
+        void rectifyLeft(ofImage& leftImage);
+        bool isReady;
+
         
     private:
         int ndisparities = 16*5; /**< Range of disparity */
@@ -56,33 +112,5 @@ namespace ofxCv {
     protected:
 	};
 
-
-	class Camera {
-	public:
-		Camera();
-		virtual ~Camera();
-
-        // chessboard calibration
-        template <class T>
-		ofPolyline calibrate(T& image) {
-            image.setImageType(OF_IMAGE_GRAYSCALE);
-            return toOf(calibrate(toCv(image)));
-        }
-	    vector<cv::Point2f> calibrate(cv::Mat image);
-        vector<cv::Point3f> Create3DChessboardCorners(cv::Size boardSize, float squareSize);
-
-        void rectify(ofImage srcImage, ofImage& dstImage);
-            
-        std::vector<cv::Mat> rotationVectors;
-        std::vector<cv::Mat> translationVectors;
-        cv::Mat distortionCoefficients;
-        cv::Mat cameraMatrix;
-        cv::Mat cameraMatrixRefined;
-
-        bool isReady;
-        
-    private:
-    protected:
-	};
 	
 }
