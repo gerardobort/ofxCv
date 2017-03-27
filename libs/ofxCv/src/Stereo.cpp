@@ -183,17 +183,30 @@ namespace ofxCv {
             leftCamera.imageSize,
             // output matrices
             R, T, E, F);
+
+        std::cout << "R: " << R << std::endl;
+        std::cout << "T: " << R << std::endl;
+        std::cout << "E: " << R << std::endl;
+        std::cout << "F: " << R << std::endl;
         isReady = true;
     }
 
     void Stereo::rectifyLeft(ofImage& leftImage) {
-        cv::Mat img = toCv(leftImage);
-        img *= R;
-        img *= T;
-        //cv::warpAffine(img,R*T, (img.cols,img.rows))
-        ofPixels pix;
-        toOf(img, pix);
-        leftImage.setFromPixels(pix);
+        cv::Mat src = toCv(leftImage);
+        cv::Mat dst = Mat::zeros(src.rows, src.cols, src.type());
+        // http://docs.opencv.org/2.4/doc/tutorials/imgproc/imgtrans/warp_affine/warp_affine.html
+        Mat A = (Mat_<double>(3, 2) << 1, 1,   0, 1,   1, 0);
+        Mat B(3, 2, CV_32F);
+        B = E * A;
+
+        Mat A1(3, 2, CV_32F);
+        Mat B1(3, 2, CV_32F);
+        A.assignTo(A1, CV_32F);
+        B.assignTo(B1, CV_32F);
+
+        cv::Mat left2Right = getAffineTransform(A1, B1);
+        cv::warpAffine(src, dst, left2Right, dst.size());
+        toOf(dst, leftImage);
     }
         
 }
