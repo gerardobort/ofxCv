@@ -96,8 +96,11 @@ namespace ofxCv {
         //cv::Mat_<double> R(3,3);             // 3x3 matrix, rotation left to right camera
         //cv::Mat_<double> T(3,1);             // * 3 * x1 matrix, translation left to right proj. center
         cv::Mat R, T, E, F;
+        cv::Mat R1, R2, P1, P2, Q;
+        cv::Mat map1x, map1y, map2x, map2y;
         void calibrate(Camera& leftCamera, Camera& rightCamera);
         void rectifyLeft(ofImage& leftImage);
+        void rectify(ofImage& leftImage, ofImage& rightImage);
         bool isReady;
 
         
